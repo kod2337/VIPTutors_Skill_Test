@@ -338,12 +338,11 @@ const handleEditTask = (task) => {
 }
 
 const handleDeleteTask = async (taskId) => {
-  if (confirm('Are you sure you want to delete this task?')) {
-    try {
-      await taskStore.deleteTask(taskId)
-    } catch (error) {
-      console.error('Failed to delete task:', error)
-    }
+  try {
+    await taskStore.deleteTask(taskId)
+  } catch (error) {
+    console.error('Failed to delete task:', error)
+    // Error handling is now done in the store with SweetAlert2
   }
 }
 

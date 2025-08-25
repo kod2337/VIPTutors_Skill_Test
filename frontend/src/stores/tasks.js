@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import apiClient from '@/services/api'
+import Swal from 'sweetalert2'
 
 export const useTaskStore = defineStore('tasks', () => {
   // State
@@ -98,6 +99,19 @@ export const useTaskStore = defineStore('tasks', () => {
       const response = await apiClient.post('/tasks', taskData)
       tasks.value.push(response.data.data)
       await fetchStatistics() // Update statistics
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Success!',
+        text: 'Task created successfully.',
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      })
+      
       return response.data.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create task'
@@ -118,6 +132,19 @@ export const useTaskStore = defineStore('tasks', () => {
         tasks.value[index] = response.data.data
       }
       await fetchStatistics() // Update statistics
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Updated!',
+        text: 'Task updated successfully.',
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      })
+      
       return response.data.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to update task'
@@ -128,6 +155,33 @@ export const useTaskStore = defineStore('tasks', () => {
   }
 
   const deleteTask = async (taskId) => {
+    // Get task details for confirmation
+    const task = tasks.value.find(t => t.id === taskId)
+    if (!task) {
+      throw new Error('Task not found')
+    }
+
+    // Show SweetAlert2 confirmation dialog
+    const result = await Swal.fire({
+      title: 'Delete Task?',
+      html: `Are you sure you want to delete <strong>"${task.title}"</strong>?<br><small class="text-gray-500">This action cannot be undone.</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      customClass: {
+        confirmButton: 'btn btn-danger',
+        cancelButton: 'btn btn-secondary'
+      }
+    })
+
+    if (!result.isConfirmed) {
+      return // User cancelled
+    }
+
     loading.value = true
     error.value = null
 
@@ -135,8 +189,29 @@ export const useTaskStore = defineStore('tasks', () => {
       await apiClient.delete(`/tasks/${taskId}`)
       tasks.value = tasks.value.filter(task => task.id !== taskId)
       await fetchStatistics() // Update statistics
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Deleted!',
+        text: 'Task has been deleted successfully.',
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      })
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to delete task'
+      
+      // Show error notification
+      Swal.fire({
+        title: 'Error!',
+        text: error.value,
+        icon: 'error',
+        confirmButtonColor: '#dc2626'
+      })
+      
       throw err
     } finally {
       loading.value = false
@@ -154,6 +229,21 @@ export const useTaskStore = defineStore('tasks', () => {
         tasks.value[index] = response.data.data
       }
       await fetchStatistics() // Update statistics
+      
+      // Show success notification
+      const task = response.data.data
+      const statusText = task.status === 'completed' ? 'completed' : 'marked as pending'
+      Swal.fire({
+        title: 'Status Updated!',
+        text: `Task "${task.title}" ${statusText}.`,
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      })
+      
       return response.data.data
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to toggle task status'
@@ -184,6 +274,18 @@ export const useTaskStore = defineStore('tasks', () => {
       // Re-sort tasks
       tasks.value.sort((a, b) => a.order - b.order)
       console.log('Local tasks reordered')
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Reordered!',
+        text: 'Tasks have been reordered successfully.',
+        icon: 'success',
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      })
     } catch (err) {
       console.error('Reorder failed:', err)
       error.value = err.response?.data?.message || 'Failed to reorder tasks'

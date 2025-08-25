@@ -1,21 +1,21 @@
 <template>
   <div 
-    class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+    class="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
     :class="{ 
       'opacity-75': task.status === 'completed',
       'cursor-move': dragMode,
       'bg-gray-50': dragMode && isDragging
     }"
   >
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-4 flex-1">
+    <div class="flex items-start sm:items-center justify-between">
+      <div class="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
         <!-- Drag Handle (visible only in drag mode) -->
         <div 
           v-if="dragMode" 
-          class="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 cursor-move"
+          class="flex-shrink-0 p-1 sm:p-2 text-gray-400 hover:text-gray-600 cursor-move"
           title="Drag to reorder"
         >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
           </svg>
         </div>
@@ -24,14 +24,14 @@
         <button
           v-if="!dragMode"
           @click="$emit('toggle-status', task.id)"
-          class="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          class="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors mt-1 sm:mt-0"
           :class="task.status === 'completed' ? 'text-green-600' : 'text-gray-400'"
           title="Toggle completion status"
         >
-          <svg v-if="task.status === 'completed'" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+          <svg v-if="task.status === 'completed'" class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          <svg v-else class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-else class="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke-width="2"/>
           </svg>
         </button>
@@ -39,14 +39,14 @@
         <!-- Order Badge (visible only in drag mode) -->
         <div 
           v-if="dragMode" 
-          class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center"
+          class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center"
         >
           <span class="text-xs font-medium text-blue-800">{{ task.order }}</span>
         </div>
 
         <!-- Task Content -->
         <div class="flex-1 min-w-0">
-          <div class="flex items-center space-x-3">
+          <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <h4 
               class="text-sm font-medium text-gray-900 truncate"
               :class="{ 'line-through text-gray-500': task.status === 'completed' }"
@@ -54,37 +54,39 @@
               {{ task.title }}
             </h4>
             
-            <!-- Priority Badge -->
-            <span 
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border"
-              :class="getPriorityClasses(task.priority)"
-            >
-              <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="getPriorityDotClasses(task.priority)"></span>
-              {{ task.priority.charAt(0).toUpperCase() + task.priority.slice(1) }}
-            </span>
+            <div class="flex flex-wrap gap-2">
+              <!-- Priority Badge -->
+              <span 
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border"
+                :class="getPriorityClasses(task.priority)"
+              >
+                <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="getPriorityDotClasses(task.priority)"></span>
+                {{ task.priority.charAt(0).toUpperCase() + task.priority.slice(1) }}
+              </span>
 
-            <!-- Status Badge -->
-            <span 
-              v-if="task.status === 'completed'"
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"
-            >
-              ✓ Completed
-            </span>
+              <!-- Status Badge -->
+              <span 
+                v-if="task.status === 'completed'"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"
+              >
+                ✓ Completed
+              </span>
+            </div>
           </div>
           
           <p 
             v-if="task.description" 
-            class="mt-1 text-sm text-gray-600 truncate"
+            class="mt-1 text-sm text-gray-600 line-clamp-2 sm:truncate"
             :class="{ 'line-through': task.status === 'completed' }"
           >
             {{ task.description }}
           </p>
 
           <!-- Task Metadata -->
-          <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+          <div class="mt-2 flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
             <span v-if="!dragMode">Order: {{ task.order }}</span>
             <span>Created: {{ formatDate(task.created_at) }}</span>
-            <span v-if="task.updated_at !== task.created_at">
+            <span v-if="task.updated_at !== task.created_at" class="hidden sm:inline">
               Updated: {{ formatDate(task.updated_at) }}
             </span>
           </div>
@@ -92,7 +94,7 @@
       </div>
 
       <!-- Action Buttons (hidden in drag mode) -->
-      <div v-if="!dragMode" class="flex items-center space-x-2 ml-4">
+      <div v-if="!dragMode" class="flex items-center space-x-1 sm:space-x-2 ml-2 sm:ml-4 flex-shrink-0">
         <!-- Edit Button -->
         <button
           @click="$emit('edit', task)"
@@ -118,7 +120,7 @@
       </div>
 
       <!-- Drag Mode Indicator -->
-      <div v-if="dragMode" class="flex items-center space-x-2 ml-4">
+      <div v-if="dragMode" class="flex items-center space-x-2 ml-2 sm:ml-4 flex-shrink-0">
         <div class="flex flex-col space-y-1">
           <div class="w-1 h-1 bg-gray-400 rounded-full"></div>
           <div class="w-1 h-1 bg-gray-400 rounded-full"></div>
