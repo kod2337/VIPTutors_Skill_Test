@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
 class TaskService
@@ -27,6 +28,15 @@ class TaskService
         return Cache::remember($cacheKey, 300, function () use ($user, $filters) {
             return $this->taskRepository->getTasksForUser($user->id, $filters);
         });
+    }
+
+    /**
+     * Get paginated tasks for a user with filtering (no caching for paginated results)
+     */
+    public function getUserTasksPaginated(User $user, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        // Don't cache paginated results as they change frequently
+        return $this->taskRepository->getTasksForUserPaginated($user->id, $filters, $perPage);
     }
 
     /**
@@ -137,6 +147,18 @@ class TaskService
     public function searchTasks(User $user, string $search): Collection
     {
         return $this->taskRepository->searchTasks($user->id, $search);
+    }
+
+    /**
+     * Get search suggestions based on existing task titles
+     */
+    public function getSearchSuggestions(User $user, string $query): array
+    {
+        $cacheKey = "search_suggestions_user_{$user->id}_" . md5($query);
+        
+        return Cache::remember($cacheKey, 300, function () use ($user, $query) {
+            return $this->taskRepository->getSearchSuggestions($user->id, $query);
+        });
     }
 
     /**

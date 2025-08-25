@@ -2,11 +2,12 @@ import axios, { type AxiosResponse } from 'axios'
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   withCredentials: true, // Important for Laravel Sanctum
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning
   },
 })
 

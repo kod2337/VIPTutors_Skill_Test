@@ -37,6 +37,16 @@
               <span class="hidden sm:inline">Admin</span>
             </span>
             
+            <!-- Admin Dashboard Link -->
+            <router-link
+              v-if="user?.is_admin"
+              to="/admin"
+              class="inline-flex items-center px-2 sm:px-4 py-2 border border-blue-300 rounded-lg shadow-sm text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+            >
+              <CogIcon class="h-4 w-4 sm:mr-2" />
+              <span class="hidden sm:inline">Admin Panel</span>
+            </router-link>
+            
             <!-- Logout Button -->
             <button
               @click="handleLogout"
@@ -86,6 +96,16 @@
         </div>
       </div>
 
+      <!-- Advanced Search Bar -->
+      <AdvancedSearchBar
+        v-model="searchQuery"
+        @search="handleSearch"
+        class="mb-6"
+      />
+
+      <!-- Enhanced Filter Controls -->
+      <EnhancedFilterControls class="mb-6" />
+
       <!-- Task List Component -->
       <DraggableTaskList @edit-task="handleEditTask" @tasks-reordered="handleTasksReordered" />
 
@@ -107,11 +127,14 @@ import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/tasks'
 import DraggableTaskList from '@/components/DraggableTaskList.vue'
 import TaskForm from '@/components/TaskForm.vue'
+import AdvancedSearchBar from '@/components/AdvancedSearchBar.vue'
+import EnhancedFilterControls from '@/components/EnhancedFilterControls.vue'
 import {
   RectangleStackIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
-  PlusIcon
+  PlusIcon,
+  CogIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -121,6 +144,7 @@ const taskStore = useTaskStore()
 const isLoading = ref(false)
 const showTaskForm = ref(false)
 const selectedTask = ref(null)
+const searchQuery = ref('')
 
 const user = computed(() => authStore.user)
 
@@ -150,6 +174,10 @@ const handleLogout = async () => {
 const handleEditTask = (task) => {
   selectedTask.value = task
   showTaskForm.value = true
+}
+
+const handleSearch = (query) => {
+  taskStore.setFilter('search', query)
 }
 
 const handleCreateTask = () => {

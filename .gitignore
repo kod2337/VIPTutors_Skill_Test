@@ -1,0 +1,35 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# ngrok configuration (contains auth token)
+ngrok.yml
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Laravel specific
+/vendor
+/storage/*.key
+/public/hot
+/public/storage
+/bootstrap/cache/*.php
+
+# Logs
+*.log
+npm-debug.log*

@@ -25,9 +25,13 @@ return [
         'http://127.0.0.1:3000',
         'http://127.0.0.1:5173',
         'http://127.0.0.1:5174',
+        'https://010048f24e30.ngrok-free.app', // Your current ngrok frontend URL
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https:\/\/.*\.ngrok-free\.app$/', // Allow all ngrok domains
+        '/^https:\/\/.*\.ngrok\.app$/', // Alternative ngrok domain pattern
+    ],
 
     'allowed_headers' => ['*'],
 

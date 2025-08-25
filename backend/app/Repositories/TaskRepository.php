@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Task;
 use App\Repositories\Interfaces\TaskRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class TaskRepository extends BaseRepository implements TaskRepositoryInterface
@@ -19,6 +20,24 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
      */
     public function getTasksForUser(int $userId, array $filters = []): Collection
     {
+        $query = $this->buildTaskQuery($userId, $filters);
+        return $query->get();
+    }
+
+    /**
+     * Get paginated tasks for a specific user with optional filters
+     */
+    public function getTasksForUserPaginated(int $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = $this->buildTaskQuery($userId, $filters);
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Build task query with filters
+     */
+    protected function buildTaskQuery(int $userId, array $filters = [])
+    {
         $query = $this->model->newQuery()->forUser($userId);
 
         // Apply status filter
@@ -31,13 +50,45 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
             $query->byPriority($filters['priority']);
         }
 
-        // Apply search filter
-        if (isset($filters['search'])) {
-            $query->search($filters['search']);
+        // Apply search filter (enhanced full-text search)
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $search = trim($filters['search']);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                  ->orWhere('description', 'LIKE', "%{$search}%");
+            });
         }
 
-        return $query->ordered()
-                    ->get();
+        // Apply date filters
+        if (isset($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (isset($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // Apply sorting
+        if (isset($filters['sort_by'])) {
+            $sortBy = $filters['sort_by'];
+            $sortDirection = $filters['sort_direction'] ?? 'asc';
+            
+            // Validate sort fields
+            $allowedSortFields = ['created_at', 'updated_at', 'title', 'priority', 'status', 'order'];
+            if (in_array($sortBy, $allowedSortFields)) {
+                if ($sortBy === 'priority') {
+                    // Custom priority sorting
+                    $query->orderByRaw("FIELD(priority, 'high', 'medium', 'low') " . ($sortDirection === 'desc' ? 'DESC' : 'ASC'));
+                } else {
+                    $query->orderBy($sortBy, $sortDirection);
+                }
+            }
+        } else {
+            // Default ordering by order field
+            $query->ordered();
+        }
+
+        return $query;
     }
 
     /**
@@ -71,6 +122,40 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
                           ->search($search)
                           ->ordered()
                           ->get();
+    }
+
+    /**
+     * Get search suggestions based on existing task titles
+     */
+    public function getSearchSuggestions(int $userId, string $query): array
+    {
+        $suggestions = $this->model->forUser($userId)
+            ->where('title', 'LIKE', "%{$query}%")
+            ->selectRaw('DISTINCT title')
+            ->orderBy('title')
+            ->limit(10)
+            ->pluck('title')
+            ->toArray();
+
+        // Also get common words from descriptions
+        $descriptionWords = $this->model->forUser($userId)
+            ->where('description', 'LIKE', "%{$query}%")
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->pluck('description')
+            ->flatMap(function ($description) use ($query) {
+                $words = str_word_count(strtolower($description), 1);
+                return array_filter($words, function ($word) use ($query) {
+                    return strlen($word) > 2 && stripos($word, strtolower($query)) !== false;
+                });
+            })
+            ->unique()
+            ->sort()
+            ->take(5)
+            ->values()
+            ->toArray();
+
+        return array_unique(array_merge($suggestions, $descriptionWords));
     }
 
     /**

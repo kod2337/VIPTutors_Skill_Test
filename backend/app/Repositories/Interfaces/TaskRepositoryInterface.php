@@ -4,6 +4,7 @@ namespace App\Repositories\Interfaces;
 
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface TaskRepositoryInterface extends BaseRepositoryInterface
 {
@@ -11,6 +12,11 @@ interface TaskRepositoryInterface extends BaseRepositoryInterface
      * Get tasks for a specific user
      */
     public function getTasksForUser(int $userId, array $filters = []): Collection;
+
+    /**
+     * Get paginated tasks for a specific user
+     */
+    public function getTasksForUserPaginated(int $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     /**
      * Get tasks by status
@@ -26,6 +32,11 @@ interface TaskRepositoryInterface extends BaseRepositoryInterface
      * Search tasks by title or description
      */
     public function searchTasks(int $userId, string $search): Collection;
+
+    /**
+     * Get search suggestions based on existing task titles
+     */
+    public function getSearchSuggestions(int $userId, string $query): array;
 
     /**
      * Get user task statistics

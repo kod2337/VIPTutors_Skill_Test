@@ -8,11 +8,24 @@ export const useTaskStore = defineStore('tasks', () => {
   const tasks = ref([])
   const loading = ref(false)
   const error = ref(null)
+  const searchSuggestions = ref([])
+  const searchCache = ref(new Map())
   const filters = ref({
     status: 'all',
     priority: 'all',
-    search: ''
+    search: '',
+    sort_by: 'order',
+    sort_direction: 'asc'
   })
+  const pagination = ref({
+    current_page: 1,
+    per_page: 10,
+    total: 0,
+    last_page: 1,
+    from: 0,
+    to: 0
+  })
+  const usePagination = ref(false)
   const statistics = ref({
     total: 0,
     completed: 0,
@@ -71,6 +84,8 @@ export const useTaskStore = defineStore('tasks', () => {
     
     try {
       const params = new URLSearchParams()
+      
+      // Add filters
       if (filters.value.status !== 'all') {
         params.append('status', filters.value.status)
       }
@@ -80,15 +95,83 @@ export const useTaskStore = defineStore('tasks', () => {
       if (filters.value.search) {
         params.append('search', filters.value.search)
       }
+      if (filters.value.sort_by) {
+        params.append('sort_by', filters.value.sort_by)
+        params.append('sort_direction', filters.value.sort_direction)
+      }
+      
+      // Add pagination if enabled
+      if (usePagination.value) {
+        params.append('page', pagination.value.current_page)
+        params.append('per_page', pagination.value.per_page)
+      }
 
       const response = await apiClient.get(`/tasks?${params.toString()}`)
-      tasks.value = response.data.data
+      
+      if (usePagination.value && response.data.meta) {
+        // Handle paginated response
+        tasks.value = response.data.data
+        pagination.value = {
+          current_page: response.data.meta.current_page,
+          per_page: response.data.meta.per_page,
+          total: response.data.meta.total,
+          last_page: response.data.meta.last_page,
+          from: response.data.meta.from,
+          to: response.data.meta.to
+        }
+      } else {
+        // Handle non-paginated response
+        tasks.value = response.data.data
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch tasks'
       console.error('Error fetching tasks:', err)
     } finally {
       loading.value = false
     }
+  }
+
+  // Fetch search suggestions
+  const fetchSearchSuggestions = async (query) => {
+    if (!query.trim()) {
+      searchSuggestions.value = []
+      return
+    }
+
+    const cacheKey = `search_${query.trim().toLowerCase()}`
+    
+    // Check cache first
+    if (searchCache.value.has(cacheKey)) {
+      const cached = searchCache.value.get(cacheKey)
+      // Use cache if it's less than 5 minutes old
+      if (Date.now() - cached.timestamp < 300000) {
+        searchSuggestions.value = cached.data
+        return
+      }
+    }
+
+    try {
+      const response = await api.get('/tasks-search-suggestions', {
+        params: { search: query.trim() }
+      })
+      const suggestions = response.data.data || []
+      
+      // Cache the results
+      searchCache.value.set(cacheKey, {
+        data: suggestions,
+        timestamp: Date.now()
+      })
+      
+      searchSuggestions.value = suggestions
+    } catch (err) {
+      console.error('Error fetching search suggestions:', err)
+      searchSuggestions.value = []
+    }
+  }
+
+  // Clear search cache
+  const clearSearchCache = () => {
+    searchCache.value.clear()
   }
 
   const createTask = async (taskData) => {
@@ -98,6 +181,7 @@ export const useTaskStore = defineStore('tasks', () => {
     try {
       const response = await apiClient.post('/tasks', taskData)
       tasks.value.push(response.data.data)
+      clearSearchCache() // Clear search cache since tasks have changed
       await fetchStatistics() // Update statistics
       
       // Show success notification
@@ -131,6 +215,7 @@ export const useTaskStore = defineStore('tasks', () => {
       if (index !== -1) {
         tasks.value[index] = response.data.data
       }
+      clearSearchCache() // Clear search cache since tasks have changed
       await fetchStatistics() // Update statistics
       
       // Show success notification
@@ -188,6 +273,7 @@ export const useTaskStore = defineStore('tasks', () => {
     try {
       await apiClient.delete(`/tasks/${taskId}`)
       tasks.value = tasks.value.filter(task => task.id !== taskId)
+      clearSearchCache() // Clear search cache since tasks have changed
       await fetchStatistics() // Update statistics
       
       // Show success notification
@@ -313,9 +399,41 @@ export const useTaskStore = defineStore('tasks', () => {
     filters.value = {
       status: 'all',
       priority: 'all',
-      search: ''
+      search: '',
+      sort_by: 'order',
+      sort_direction: 'asc'
     }
+    pagination.value.current_page = 1
     fetchTasks()
+  }
+
+  const togglePagination = (enabled = null) => {
+    usePagination.value = enabled !== null ? enabled : !usePagination.value
+    pagination.value.current_page = 1
+    fetchTasks()
+  }
+
+  const setPage = (page) => {
+    pagination.value.current_page = page
+    fetchTasks()
+  }
+
+  const setPerPage = (perPage) => {
+    pagination.value.per_page = perPage
+    pagination.value.current_page = 1
+    fetchTasks()
+  }
+
+  const nextPage = () => {
+    if (pagination.value.current_page < pagination.value.last_page) {
+      setPage(pagination.value.current_page + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (pagination.value.current_page > 1) {
+      setPage(pagination.value.current_page - 1)
+    }
   }
 
   const clearError = () => {
@@ -333,7 +451,10 @@ export const useTaskStore = defineStore('tasks', () => {
     tasks,
     loading,
     error,
+    searchSuggestions,
     filters,
+    pagination,
+    usePagination,
     statistics,
     
     // Getters
@@ -344,6 +465,8 @@ export const useTaskStore = defineStore('tasks', () => {
     
     // Actions
     fetchTasks,
+    fetchSearchSuggestions,
+    clearSearchCache,
     createTask,
     updateTask,
     deleteTask,
@@ -352,6 +475,11 @@ export const useTaskStore = defineStore('tasks', () => {
     fetchStatistics,
     setFilter,
     clearFilters,
+    togglePagination,
+    setPage,
+    setPerPage,
+    nextPage,
+    prevPage,
     clearError,
     init
   }

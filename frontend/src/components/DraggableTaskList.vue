@@ -120,6 +120,18 @@
         >
           Clear
         </button>
+
+        <!-- Pagination Toggle -->
+        <button
+          @click="togglePagination"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          :class="{ 'bg-blue-50 border-blue-300 text-blue-700': taskStore.usePagination }"
+        >
+          <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21l4-4-4-4m6 0l4 4-4 4"></path>
+          </svg>
+          {{ taskStore.usePagination ? 'Disable Pages' : 'Enable Pages' }}
+        </button>
       </div>
     </div>
 
@@ -212,6 +224,7 @@
         </div>
 
         <Draggable
+          ref="draggableRef"
           v-model="localTasks"
           @start="onDragStart"
           @end="onDragEnd"
@@ -233,18 +246,32 @@
           </template>
         </Draggable>
       </div>
+
+      <!-- Pagination Component -->
+      <TaskPagination
+        v-if="taskStore.usePagination && !loading && tasks.length > 0"
+        :pagination="taskStore.pagination"
+        @prev-page="handlePrevPage"
+        @next-page="handleNextPage"
+        @go-to-page="handleGoToPage"
+        @change-per-page="handleChangePerPage"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useTaskStore } from '@/stores/tasks'
 import Draggable from 'vuedraggable'
 import DraggableTaskItem from './DraggableTaskItem.vue'
+import TaskPagination from './TaskPagination.vue'
 
 // Store
 const taskStore = useTaskStore()
+
+// Component refs
+const draggableRef = ref(null)
 
 // Local reactive data
 const searchQuery = ref('')
@@ -292,35 +319,43 @@ const toggleDragMode = () => {
 }
 
 const onDragStart = () => {
-  isDragging.value = true
+  try {
+    isDragging.value = true
+  } catch (error) {
+    console.debug('Drag start error (safe to ignore):', error.message)
+  }
 }
 
 const onDragEnd = async (event) => {
-  isDragging.value = false
-  
-  console.log('Drag ended:', event.oldIndex, '->', event.newIndex)
-  
-  // Only proceed if the item was actually moved
-  if (event.oldIndex === event.newIndex) {
-    console.log('No movement detected, skipping reorder')
-    return
-  }
-
   try {
-    // Get the new order of task IDs from the locally dragged tasks
-    const taskOrders = localTasks.value.map(task => task.id)
-    console.log('New task order:', taskOrders)
+    isDragging.value = false
     
-    // Update the backend
-    await taskStore.reorderTasks(taskOrders)
-    console.log('Tasks reordered successfully')
+    console.log('Drag ended:', event.oldIndex, '->', event.newIndex)
     
-    // Show success feedback
-    console.log('Tasks reordered successfully')
+    // Only proceed if the item was actually moved
+    if (event.oldIndex === event.newIndex) {
+      console.log('No movement detected, skipping reorder')
+      return
+    }
+
+    try {
+      // Get the new order of task IDs from the locally dragged tasks
+      const taskOrders = localTasks.value.map(task => task.id)
+      console.log('New task order:', taskOrders)
+      
+      // Update the backend
+      await taskStore.reorderTasks(taskOrders)
+      console.log('Tasks reordered successfully')
+      
+      // Show success feedback
+      console.log('Tasks reordered successfully')
+    } catch (error) {
+      console.error('Failed to reorder tasks:', error)
+      // Revert the order by fetching fresh data
+      await taskStore.fetchTasks()
+    }
   } catch (error) {
-    console.error('Failed to reorder tasks:', error)
-    // Revert the order by fetching fresh data
-    await taskStore.fetchTasks()
+    console.debug('Drag end error (safe to ignore):', error.message)
   }
 }
 
@@ -350,8 +385,54 @@ const retryFetch = () => {
   taskStore.fetchTasks()
 }
 
+// Toggle pagination mode
+const togglePagination = () => {
+  taskStore.togglePagination()
+}
+
+// Pagination handlers
+const handlePrevPage = () => {
+  taskStore.prevPage()
+}
+
+const handleNextPage = () => {
+  taskStore.nextPage()
+}
+
+const handleGoToPage = (page) => {
+  taskStore.setPage(page)
+}
+
+const handleChangePerPage = (perPage) => {
+  taskStore.setPerPage(perPage)
+}
+
 // Emits
 const emit = defineEmits(['edit-task'])
+
+// Cleanup to prevent vuedraggable errors during unmount
+onBeforeUnmount(() => {
+  try {
+    // Force stop any ongoing drag operations
+    isDragging.value = false
+    dragMode.value = false
+    
+    // Clean up draggable instance
+    if (draggableRef.value && draggableRef.value.sortable) {
+      try {
+        draggableRef.value.sortable.destroy()
+      } catch (e) {
+        // Ignore errors during sortable cleanup
+      }
+    }
+    
+    // Reset local tasks to prevent stale references
+    localTasks.value = []
+  } catch (error) {
+    // Silently handle cleanup errors
+    console.debug('Cleanup warning (safe to ignore):', error.message)
+  }
+})
 
 // Note: init() is called from DashboardView to avoid duplicate calls
 </script>

@@ -28,7 +28,22 @@ class TaskController extends Controller
     {
         $user = auth()->user();
         
+        // Validate advanced search parameters
+        $request->validate([
+            'status' => 'nullable|in:pending,completed',
+            'priority' => 'nullable|in:low,medium,high',
+            'search' => 'nullable|string|max:255',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'sort_by' => 'nullable|in:created_at,updated_at,title,priority,status,order',
+            'sort_direction' => 'nullable|in:asc,desc',
+            'per_page' => 'nullable|integer|min:5|max:10',
+            'page' => 'nullable|integer|min:1'
+        ]);
+        
         $filters = [];
+        
+        // Basic filters
         if ($request->filled('status')) {
             $filters['status'] = $request->status;
         }
@@ -39,9 +54,31 @@ class TaskController extends Controller
             $filters['search'] = $request->search;
         }
         
-        $tasks = $this->taskService->getUserTasks($user, $filters);
+        // Date filters
+        if ($request->filled('date_from')) {
+            $filters['date_from'] = $request->date_from;
+        }
+        if ($request->filled('date_to')) {
+            $filters['date_to'] = $request->date_to;
+        }
         
-        return TaskResource::collection($tasks);
+        // Sorting
+        if ($request->filled('sort_by')) {
+            $filters['sort_by'] = $request->sort_by;
+            $filters['sort_direction'] = $request->get('sort_direction', 'asc');
+        }
+        
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $withPagination = $request->has('page') || $request->has('per_page');
+        
+        if ($withPagination) {
+            $tasks = $this->taskService->getUserTasksPaginated($user, $filters, $perPage);
+            return TaskResource::collection($tasks);
+        } else {
+            $tasks = $this->taskService->getUserTasks($user, $filters);
+            return TaskResource::collection($tasks);
+        }
     }
 
     /**
@@ -170,6 +207,53 @@ class TaskController extends Controller
         
         return response()->json([
             'data' => $stats
+        ]);
+    }
+
+    /**
+     * Get search suggestions based on existing task titles
+     */
+    public function searchSuggestions(Request $request): JsonResponse
+    {
+        $request->validate([
+            'query' => 'required|string|min:1|max:100'
+        ]);
+
+        $user = auth()->user();
+        $query = $request->get('query');
+        
+        $suggestions = $this->taskService->getSearchSuggestions($user, $query);
+        
+        return response()->json([
+            'data' => $suggestions
+        ]);
+    }
+
+    /**
+     * Get task filter options (priorities, statuses, etc.)
+     */
+    public function filterOptions(): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'statuses' => [
+                    ['value' => 'pending', 'label' => 'Pending'],
+                    ['value' => 'completed', 'label' => 'Completed']
+                ],
+                'priorities' => [
+                    ['value' => 'low', 'label' => 'Low Priority'],
+                    ['value' => 'medium', 'label' => 'Medium Priority'],
+                    ['value' => 'high', 'label' => 'High Priority']
+                ],
+                'sort_options' => [
+                    ['value' => 'created_at', 'label' => 'Date Created'],
+                    ['value' => 'updated_at', 'label' => 'Last Updated'],
+                    ['value' => 'title', 'label' => 'Title'],
+                    ['value' => 'priority', 'label' => 'Priority'],
+                    ['value' => 'status', 'label' => 'Status'],
+                    ['value' => 'order', 'label' => 'Custom Order']
+                ]
+            ]
         ]);
     }
 }
