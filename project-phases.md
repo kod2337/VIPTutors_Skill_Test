@@ -10,29 +10,29 @@ This document outlines the development phases for the Full-Stack Laravel & Vue T
 **Estimated Time: 2-3 days**
 
 ### Backend Setup
-- [ ] Initialize Laravel project with latest stable version
-- [ ] Configure environment (.env setup)
-- [ ] Setup database connection (MySQL)
-- [ ] Install and configure Laravel Sanctum
-- [ ] Setup PSR-12 coding standards
-- [ ] Create basic project structure following SOLID principles
-- [ ] Setup Service Layer and Repository Pattern architecture
+- [x] Initialize Laravel project with latest stable version
+- [x] Configure environment (.env setup)
+- [x] Setup database connection (MySQL)
+- [x] Install and configure Laravel Sanctum
+- [x] Setup PSR-12 coding standards
+- [x] Create basic project structure following SOLID principles
+- [x] Setup Service Layer and Repository Pattern architecture
 
 ### Frontend Setup
-- [ ] Initialize Vue 3 project with Vite
-- [ ] Install and configure dependencies:
-  - Vue Router
-  - Pinia (state management)
-  - TailwindCSS
-  - Axios for API calls
-- [ ] Setup project structure and folder organization
-- [ ] Configure TailwindCSS with responsive breakpoints
+- [x] Initialize Vue 3 project with Vite
+- [x] Install and configure dependencies:
+  - [x] Vue Router
+  - [x] Pinia (state management)
+  - [x] TailwindCSS
+  - [x] Axios for API calls
+- [x] Setup project structure and folder organization
+- [x] Configure TailwindCSS with responsive breakpoints
 
 ### Development Environment
-- [ ] Setup separate test database
-- [ ] Configure testing environment
-- [ ] Setup version control (Git)
-- [ ] Create initial documentation structure
+- [x] Setup separate test database
+- [x] Configure testing environment
+- [x] Setup version control (Git)
+- [x] Create initial documentation structure
 
 ---
 
@@ -40,24 +40,24 @@ This document outlines the development phases for the Full-Stack Laravel & Vue T
 **Estimated Time: 3-4 days**
 
 ### Backend Authentication
-- [ ] Create User model and migration
-- [ ] Implement Laravel Sanctum SPA authentication
-- [ ] Create authentication controllers:
-  - Registration
-  - Login/Logout
-- [ ] Create API Resources for user serialization
-- [ ] Implement password hashing and security measures
-- [ ] Create admin role system in users table
-- [ ] Develop CheckAdmin middleware
+- [x] Create User model and migration
+- [x] Implement Laravel Sanctum SPA authentication
+- [x] Create authentication controllers:
+  - [x] Registration
+  - [x] Login/Logout
+- [x] Create API Resources for user serialization
+- [x] Implement password hashing and security measures
+- [x] Create admin role system in users table
+- [x] Develop CheckAdmin middleware
 
 ### Frontend Authentication
-- [ ] Create authentication pages:
-  - Registration form
-  - Login form
-- [ ] Setup Pinia stores for authentication state
-- [ ] Implement route guards for protected routes
-- [ ] Create authentication service for API calls
-- [ ] Handle authentication errors and validation
+- [x] Create authentication pages:
+  - [x] Registration form
+  - [x] Login form
+- [x] Setup Pinia stores for authentication state
+- [x] Implement route guards for protected routes
+- [x] Create authentication service for API calls
+- [x] Handle authentication errors and validation
 
 ### Testing
 - [ ] Write unit tests for authentication endpoints

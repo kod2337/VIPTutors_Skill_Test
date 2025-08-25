@@ -1,34 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Custom components */
-@layer components {
-  .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-danger {
-    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .form-input {
-    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500;
-  }
-  
-  .task-priority-low {
-    @apply border-l-4 border-priority-low bg-green-50;
-  }
-  
-  .task-priority-medium {
-    @apply border-l-4 border-priority-medium bg-yellow-50;
-  }
-  
-  .task-priority-high {
-    @apply border-l-4 border-priority-high bg-red-50;
-  }
-}
+/* Pure TailwindCSS - No custom CSS needed! */
+/* All styling is done with utility classes directly in components */
