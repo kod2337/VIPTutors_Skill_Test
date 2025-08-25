@@ -37,7 +37,6 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
         }
 
         return $query->ordered()
-                    ->latest('created_at')
                     ->get();
     }
 
@@ -84,9 +83,9 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
                                 COUNT(*) as total,
                                 SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
                                 SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
-                                SUM(CASE WHEN priority = "high" THEN 1 ELSE 0 END) as high_priority,
-                                SUM(CASE WHEN priority = "medium" THEN 1 ELSE 0 END) as medium_priority,
-                                SUM(CASE WHEN priority = "low" THEN 1 ELSE 0 END) as low_priority
+                                SUM(CASE WHEN priority = "high" THEN 1 ELSE 0 END) as `high_priority`,
+                                SUM(CASE WHEN priority = "medium" THEN 1 ELSE 0 END) as `medium_priority`,
+                                SUM(CASE WHEN priority = "low" THEN 1 ELSE 0 END) as `low_priority`
                             ')
                             ->first();
 

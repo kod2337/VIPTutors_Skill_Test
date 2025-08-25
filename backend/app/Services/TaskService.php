@@ -191,18 +191,25 @@ class TaskService
      */
     protected function clearUserTaskCache(int $userId): void
     {
-        // Clear task list cache patterns
-        $patterns = [
-            "tasks_user_{$userId}_*",
-            "task_stats_user_{$userId}"
-        ];
+        // Clear all possible filter combinations for this user
+        $statusFilters = ['all', 'pending', 'completed'];
+        $priorityFilters = ['all', 'low', 'medium', 'high'];
         
-        foreach ($patterns as $pattern) {
-            Cache::forget($pattern);
+        // Clear cache for all combinations of filters
+        foreach ($statusFilters as $status) {
+            foreach ($priorityFilters as $priority) {
+                // Clear cache with different filter combinations
+                Cache::forget("tasks_user_{$userId}_status_{$status}_priority_{$priority}");
+                Cache::forget("tasks_user_{$userId}_status_{$status}_priority_{$priority}_search_");
+            }
         }
         
-        // In a production environment with Redis, you might use:
-        // Cache::tags(["user_tasks_{$userId}"])->flush();
+        // Clear basic cache keys
+        Cache::forget("tasks_user_{$userId}");
+        Cache::forget("task_stats_user_{$userId}");
+        
+        // Clear cache keys without filters
+        Cache::forget($this->generateCacheKey($userId, []));
     }
 
     /**
