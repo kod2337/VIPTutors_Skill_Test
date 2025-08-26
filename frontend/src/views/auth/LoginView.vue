@@ -125,12 +125,6 @@
             </div>
           </button>
 
-          <!-- Forgot Password -->
-          <div class="text-center">
-            <a href="#" class="text-sm text-gray-600 hover:text-gray-900 underline">
-              Forget password? Click here
-            </a>
-          </div>
 
           <!-- Error Message -->
           <div v-if="authError" class="bg-red-50 border border-red-200 rounded-lg p-4">
