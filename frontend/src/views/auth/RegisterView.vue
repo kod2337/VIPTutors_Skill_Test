@@ -18,7 +18,7 @@
             <UserPlusIcon class="h-8 w-8 text-purple-600" />
           </div>
           <h1 class="text-4xl font-bold mb-4">
-            Join<br />VIPTutors! 
+            Join<br />Today! 
           </h1>
         </div>
         
@@ -31,7 +31,7 @@
         
         <!-- Footer -->
         <div class="text-sm text-purple-200">
-          © 2025 VIPTutors. All rights reserved.
+          © 2025 Kayser Bompat. All rights reserved.
         </div>
       </div>
     </div>

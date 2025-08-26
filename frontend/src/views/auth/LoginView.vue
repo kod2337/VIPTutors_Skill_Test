@@ -23,7 +23,7 @@
             <CheckCircleIcon class="h-8 w-8 text-blue-600" />
           </div>
           <h1 class="text-4xl font-bold mb-4">
-            Welcome Back to<br />VIPTutors
+            Welcome Back to<br />Kayser's Task Management
           </h1>
         </div>
         
@@ -36,7 +36,7 @@
         
         <!-- Footer -->
         <div class="text-sm text-blue-200">
-          © 2025 VIPTutors. All rights reserved.
+          © 2025 Kayser Bompat. All rights reserved.
         </div>
       </div>
     </div>
@@ -49,7 +49,7 @@
           <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <CheckCircleIcon class="h-8 w-8 text-white" />
           </div>
-          <h1 class="text-2xl font-bold text-gray-900">VIPTutors</h1>
+          <h1 class="text-2xl font-bold text-gray-900">Kayser's Task Management</h1>
         </div>
 
         <!-- Form Header -->
