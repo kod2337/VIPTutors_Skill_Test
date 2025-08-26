@@ -1,14 +1,8 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto">
+  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto pointer-events-none" @click.self="$emit('close')">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Background overlay -->
-      <div 
-        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-        @click="$emit('close')"
-      ></div>
-
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+      <div class="relative inline-block align-bottom bg-white rounded-lg text-left shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full max-h-[90vh] overflow-y-auto border border-gray-300 pointer-events-auto">
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
@@ -50,40 +44,62 @@
           </div>
 
           <!-- User Statistics -->
-          <div v-if="userDetails" class="mb-6">
+          <div class="mb-6">
             <h4 class="text-lg font-medium text-gray-900 mb-4">User Statistics</h4>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <!-- Loading State -->
+            <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div v-for="i in 4" :key="i" class="animate-pulse">
+                <div class="bg-gray-200 rounded-lg p-4">
+                  <div class="h-8 bg-gray-300 rounded mb-2"></div>
+                  <div class="h-4 bg-gray-300 rounded w-20"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Statistics Data -->
+            <div v-else-if="userDetails && userDetails.statistics" class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="bg-blue-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-blue-600">{{ userDetails.statistics.total_tasks }}</div>
+                <div class="text-2xl font-bold text-blue-600">{{ userDetails.statistics?.total_tasks || 0 }}</div>
                 <div class="text-sm text-blue-800">Total Tasks</div>
               </div>
               <div class="bg-green-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-green-600">{{ userDetails.statistics.completed_tasks }}</div>
+                <div class="text-2xl font-bold text-green-600">{{ userDetails.statistics?.completed_tasks || 0 }}</div>
                 <div class="text-sm text-green-800">Completed</div>
               </div>
               <div class="bg-yellow-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-yellow-600">{{ userDetails.statistics.pending_tasks }}</div>
+                <div class="text-2xl font-bold text-yellow-600">{{ userDetails.statistics?.pending_tasks || 0 }}</div>
                 <div class="text-sm text-yellow-800">Pending</div>
               </div>
               <div class="bg-purple-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-purple-600">{{ userDetails.statistics.completion_rate }}%</div>
+                <div class="text-2xl font-bold text-purple-600">{{ userDetails.statistics?.completion_rate || 0 }}%</div>
                 <div class="text-sm text-purple-800">Completion Rate</div>
               </div>
             </div>
 
             <!-- Priority Breakdown -->
-            <div class="mt-4 grid grid-cols-3 gap-4">
+            <div v-if="!loading && userDetails && userDetails.statistics" class="mt-4 grid grid-cols-3 gap-4">
               <div class="bg-red-50 rounded-lg p-3">
-                <div class="text-lg font-bold text-red-600">{{ userDetails.statistics.high_priority_tasks }}</div>
+                <div class="text-lg font-bold text-red-600">{{ userDetails.statistics?.high_priority_tasks || 0 }}</div>
                 <div class="text-xs text-red-800">High Priority</div>
               </div>
               <div class="bg-orange-50 rounded-lg p-3">
-                <div class="text-lg font-bold text-orange-600">{{ userDetails.statistics.medium_priority_tasks }}</div>
+                <div class="text-lg font-bold text-orange-600">{{ userDetails.statistics?.medium_priority_tasks || 0 }}</div>
                 <div class="text-xs text-orange-800">Medium Priority</div>
               </div>
               <div class="bg-blue-50 rounded-lg p-3">
-                <div class="text-lg font-bold text-blue-600">{{ userDetails.statistics.low_priority_tasks }}</div>
+                <div class="text-lg font-bold text-blue-600">{{ userDetails.statistics?.low_priority_tasks || 0 }}</div>
                 <div class="text-xs text-blue-800">Low Priority</div>
+              </div>
+            </div>
+            
+            <!-- Loading State for Priority Breakdown -->
+            <div v-else-if="loading" class="mt-4 grid grid-cols-3 gap-4">
+              <div v-for="i in 3" :key="i" class="animate-pulse">
+                <div class="bg-gray-200 rounded-lg p-3">
+                  <div class="h-6 bg-gray-300 rounded mb-1"></div>
+                  <div class="h-3 bg-gray-300 rounded w-16"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -139,7 +155,7 @@
               <p class="text-gray-500">No tasks found</p>
             </div>
 
-            <div v-else class="space-y-3 max-h-96 overflow-y-auto">
+            <div v-else class="space-y-3 max-h-64 overflow-y-auto">
               <div 
                 v-for="task in userTasks" 
                 :key="task.id"
@@ -260,6 +276,7 @@ import { ref, computed, watch } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/dateFormatter'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   show: {
@@ -342,34 +359,117 @@ const getPriorityColor = (priority) => {
 }
 
 const deleteTask = async (task) => {
-  if (confirm(`Are you sure you want to delete the task "${task.title}"? This action cannot be undone.`)) {
+  const result = await Swal.fire({
+    title: 'Delete Task?',
+    text: `Are you sure you want to delete the task "${task.title}"? This action cannot be undone.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true
+  })
+
+  if (result.isConfirmed) {
     try {
       await adminStore.deleteTask(task.id)
       // Refresh user details to update task count
       await fetchUserDetails()
+      
+      Swal.fire({
+        title: 'Deleted!',
+        text: `Task "${task.title}" has been deleted successfully.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
+      })
     } catch (error) {
       console.error('Error deleting task:', error)
-      alert('Failed to delete task. Please try again.')
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to delete task. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      })
     }
   }
 }
 
 const promoteToAdmin = async () => {
-  if (confirm(`Are you sure you want to promote ${props.user.name} to admin?`)) {
+  const result = await Swal.fire({
+    title: 'Promote to Admin?',
+    text: `Are you sure you want to promote ${props.user.name} to administrator? This will give them full admin privileges.`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, promote!',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true
+  })
+
+  if (result.isConfirmed) {
     try {
       await emit('role-updated', props.user.id, true)
+      
+      Swal.fire({
+        title: 'Success!',
+        text: `${props.user.name} has been promoted to administrator.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
+      })
     } catch (error) {
       console.error('Error promoting user:', error)
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to promote user. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      })
     }
   }
 }
 
 const removeAdmin = async () => {
-  if (confirm(`Are you sure you want to remove admin privileges from ${props.user.name}?`)) {
+  const result = await Swal.fire({
+    title: 'Remove Admin Privileges?',
+    text: `Are you sure you want to remove admin privileges from ${props.user.name}? They will become a regular user.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f59e0b',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Yes, remove admin!',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true
+  })
+
+  if (result.isConfirmed) {
     try {
       await emit('role-updated', props.user.id, false)
+      
+      Swal.fire({
+        title: 'Success!',
+        text: `Admin privileges have been removed from ${props.user.name}.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
+      })
     } catch (error) {
       console.error('Error removing admin:', error)
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to remove admin privileges. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      })
     }
   }
 }

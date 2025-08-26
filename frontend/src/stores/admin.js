@@ -118,7 +118,10 @@ export const useAdminStore = defineStore('admin', () => {
       clearError()
       
       const response = await api.get(`/admin/users/${userId}`, { params })
-      selectedUser.value = response.data.data.user
+      selectedUser.value = {
+        ...response.data.data.user,
+        statistics: response.data.data.statistics
+      }
       selectedUserTasks.value = response.data.data.tasks
       selectedUserTasksPagination.value = response.data.data.meta
       

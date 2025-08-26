@@ -24,14 +24,14 @@ class TaskController extends Controller
     /**
      * Display a listing of the user's tasks.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request)
     {
         $user = auth()->user();
         
         // Validate advanced search parameters
         $request->validate([
             'status' => 'nullable|in:pending,completed',
-            'priority' => 'nullable|in:low,medium,high',
+            'priority' => 'nullable|string', // Allow comma-separated priorities
             'search' => 'nullable|string|max:255',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
@@ -40,6 +40,20 @@ class TaskController extends Controller
             'per_page' => 'nullable|integer|min:5|max:10',
             'page' => 'nullable|integer|min:1'
         ]);
+        
+        // Additional validation for priority values
+        if ($request->filled('priority')) {
+            $priorities = explode(',', $request->priority);
+            $validPriorities = ['low', 'medium', 'high'];
+            foreach ($priorities as $priority) {
+                if (!in_array(trim($priority), $validPriorities)) {
+                    return response()->json([
+                        'message' => 'Invalid priority value.',
+                        'errors' => ['priority' => ['Priority must be one of: low, medium, high']]
+                    ], 422);
+                }
+            }
+        }
         
         $filters = [];
         

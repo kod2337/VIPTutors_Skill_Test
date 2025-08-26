@@ -52,6 +52,12 @@ class Task extends Model
      */
     public function scopeByPriority(Builder $query, string $priority): Builder
     {
+        // Handle comma-separated priorities
+        if (strpos($priority, ',') !== false) {
+            $priorities = array_map('trim', explode(',', $priority));
+            return $query->whereIn('priority', $priorities);
+        }
+        
         return $query->where('priority', $priority);
     }
 

@@ -5,17 +5,17 @@
       <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <h2 class="text-lg font-medium text-gray-900 mb-4 sm:mb-0">User Management</h2>
-          <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+          <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 sm:w-2/3">
             <!-- Search -->
-            <div class="relative">
+            <div class="relative flex-[3] min-w-0">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fas fa-search text-gray-400"></i>
               </div>
-              <input
+              <input  
                 v-model="searchTerm"
                 @input="debouncedSearch"
                 type="text"
-                placeholder="Search users..."
+                placeholder="Search users by name or email..."
                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
@@ -24,7 +24,7 @@
             <select
               v-model="selectedRole"
               @change="applyFilters"
-              class="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              class="block w-full sm:w-32 flex-shrink-0 px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option value="all">All Users</option>
               <option value="admin">Admins</option>
@@ -35,7 +35,7 @@
             <select
               v-model="perPage"
               @change="changePerPage"
-              class="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              class="block w-full sm:w-28 flex-shrink-0 px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option :value="5">5 per page</option>
               <option :value="10">10 per page</option>
@@ -255,6 +255,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
 import UserDetailsModal from './UserDetailsModal.vue'
+import Swal from 'sweetalert2'
 
 // Simple debounce function
 const debounce = (func, wait) => {
@@ -340,13 +341,46 @@ const toggleUserRole = async (user) => {
   
   const newRole = !user.is_admin
   const actionText = newRole ? 'promote to admin' : 'remove admin privileges'
+  const title = newRole ? 'Promote to Admin?' : 'Remove Admin Privileges?'
+  const text = newRole 
+    ? `Are you sure you want to promote ${user.name} to administrator? This will give them full admin privileges.`
+    : `Are you sure you want to remove admin privileges from ${user.name}? They will become a regular user.`
   
-  if (confirm(`Are you sure you want to ${actionText} for ${user.name}?`)) {
+  const result = await Swal.fire({
+    title: title,
+    text: text,
+    icon: newRole ? 'question' : 'warning',
+    showCancelButton: true,
+    confirmButtonColor: newRole ? '#3085d6' : '#f59e0b',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: newRole ? 'Yes, promote!' : 'Yes, remove admin!',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true
+  })
+
+  if (result.isConfirmed) {
     try {
       await adminStore.updateUserRole(user.id, newRole)
+      
+      Swal.fire({
+        title: 'Success!',
+        text: newRole 
+          ? `${user.name} has been promoted to administrator.`
+          : `Admin privileges have been removed from ${user.name}.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
+      })
     } catch (error) {
       console.error('Error updating user role:', error)
-      alert('Failed to update user role. Please try again.')
+      
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update user role. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      })
     }
   }
 }

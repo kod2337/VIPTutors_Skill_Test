@@ -95,6 +95,12 @@ export const useTaskStore = defineStore('tasks', () => {
       if (filters.value.search) {
         params.append('search', filters.value.search)
       }
+      if (filters.value.date_from) {
+        params.append('date_from', filters.value.date_from)
+      }
+      if (filters.value.date_to) {
+        params.append('date_to', filters.value.date_to)
+      }
       if (filters.value.sort_by) {
         params.append('sort_by', filters.value.sort_by)
         params.append('sort_direction', filters.value.sort_direction)
@@ -151,7 +157,7 @@ export const useTaskStore = defineStore('tasks', () => {
     }
 
     try {
-      const response = await api.get('/tasks-search-suggestions', {
+      const response = await apiClient.get('/tasks-search-suggestions', {
         params: { search: query.trim() }
       })
       const suggestions = response.data.data || []

@@ -73,12 +73,32 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Task Completion Trends</h3>
-            <TaskCompletionChart :data="taskStatistics?.completion_trends || []" />
+            <div v-if="loading" class="flex items-center justify-center h-64">
+              <div class="animate-pulse text-gray-500">Loading chart...</div>
+            </div>
+            <TaskCompletionChart 
+              v-else-if="taskStatistics?.completion_trends"
+              :data="taskStatistics.completion_trends" 
+              :key="'completion-' + Date.now()"
+            />
+            <div v-else class="flex items-center justify-center h-64 text-gray-500">
+              No data available
+            </div>
           </div>
           
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Priority Distribution</h3>
-            <PriorityDistributionChart :data="taskStatistics?.by_priority || {}" />
+            <div v-if="loading" class="flex items-center justify-center h-64">
+              <div class="animate-pulse text-gray-500">Loading chart...</div>
+            </div>
+            <PriorityDistributionChart 
+              v-else-if="taskStatistics?.by_priority"
+              :data="taskStatistics.by_priority" 
+              :key="'priority-' + Date.now()"
+            />
+            <div v-else class="flex items-center justify-center h-64 text-gray-500">
+              No data available
+            </div>
           </div>
         </div>
 
@@ -122,7 +142,7 @@ import TasksOverview from '@/components/admin/TasksOverview.vue'
 import SystemStatistics from '@/components/admin/SystemStatistics.vue'
 
 const adminStore = useAdminStore()
-const loading = ref(false)
+const loading = ref(true) // Start with loading true
 const activeTab = ref('dashboard')
 
 const tabs = [
@@ -146,7 +166,7 @@ const dashboardStats = computed(() => {
     {
       label: 'Total Tasks',
       value: stats.total_tasks,
-      icon: 'fas fa-tasks',
+      icon: 'fas fa-list-ul',
       color: 'green'
     },
     {
@@ -158,7 +178,7 @@ const dashboardStats = computed(() => {
     {
       label: 'High Priority Tasks',
       value: stats.high_priority_tasks,
-      icon: 'fas fa-exclamation-triangle',
+      icon: 'fas fa-exclamation-circle',
       color: 'red'
     }
   ]
@@ -170,11 +190,15 @@ const topPerformers = computed(() => adminStore.topPerformers)
 const refreshData = async () => {
   loading.value = true
   try {
+    // Clear existing data to force re-render
     await Promise.all([
       adminStore.fetchDashboardStats(),
       adminStore.fetchTaskStatistics(),
       adminStore.fetchTopPerformers()
     ])
+    
+    // Small delay to ensure data is fully loaded before charts render
+    await new Promise(resolve => setTimeout(resolve, 100))
   } catch (error) {
     console.error('Error refreshing data:', error)
   } finally {
@@ -183,6 +207,7 @@ const refreshData = async () => {
 }
 
 onMounted(() => {
+  // Automatically refresh data when component mounts
   refreshData()
 })
 </script>

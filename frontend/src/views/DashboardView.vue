@@ -96,13 +96,6 @@
         </div>
       </div>
 
-      <!-- Advanced Search Bar -->
-      <AdvancedSearchBar
-        v-model="searchQuery"
-        @search="handleSearch"
-        class="mb-6"
-      />
-
       <!-- Enhanced Filter Controls -->
       <EnhancedFilterControls class="mb-6" />
 
@@ -127,7 +120,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/tasks'
 import DraggableTaskList from '@/components/DraggableTaskList.vue'
 import TaskForm from '@/components/TaskForm.vue'
-import AdvancedSearchBar from '@/components/AdvancedSearchBar.vue'
 import EnhancedFilterControls from '@/components/EnhancedFilterControls.vue'
 import {
   RectangleStackIcon,
@@ -144,7 +136,6 @@ const taskStore = useTaskStore()
 const isLoading = ref(false)
 const showTaskForm = ref(false)
 const selectedTask = ref(null)
-const searchQuery = ref('')
 
 const user = computed(() => authStore.user)
 
@@ -174,10 +165,6 @@ const handleLogout = async () => {
 const handleEditTask = (task) => {
   selectedTask.value = task
   showTaskForm.value = true
-}
-
-const handleSearch = (query) => {
-  taskStore.setFilter('search', query)
 }
 
 const handleCreateTask = () => {

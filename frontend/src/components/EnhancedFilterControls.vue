@@ -30,8 +30,12 @@
             v-for="preset in filterPresets"
             :key="preset.id"
             @click="applyPreset(preset)"
-            class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 min-h-[80px]"
-            :class="{ 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500': isPresetActive(preset) }"
+            class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 min-h-[80px] cursor-pointer"
+            :class="{ 
+              'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500': isPresetActive(preset),
+              'hover:bg-red-50 hover:border-red-400': isPresetActive(preset)
+            }"
+            :title="isPresetActive(preset) ? 'Click to remove filter' : 'Click to apply filter'"
           >
             <component :is="preset.icon" class="h-6 w-6 mb-2 flex-shrink-0" />
             <span class="text-center leading-tight">{{ preset.label }}</span>
@@ -103,7 +107,6 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  CalendarIcon,
   CheckIcon,
   BoltIcon,
   ArchiveBoxIcon,
@@ -132,11 +135,13 @@ const priorityOptions = ref([
 ])
 
 // Built-in filter presets based on our database schema
-const builtInPresets = computed(() => [
+const builtInPresets = ref([
   {
     id: 'all-tasks',
     label: 'All Tasks',
     icon: RectangleStackIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       status: ['pending', 'completed'],
       priority: ['low', 'medium', 'high']
@@ -146,6 +151,8 @@ const builtInPresets = computed(() => [
     id: 'pending-tasks',
     label: 'Pending Tasks',
     icon: ClockIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       status: ['pending']
     }
@@ -154,6 +161,8 @@ const builtInPresets = computed(() => [
     id: 'completed-tasks',
     label: 'Completed',
     icon: CheckCircleIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       status: ['completed']
     }
@@ -162,6 +171,8 @@ const builtInPresets = computed(() => [
     id: 'high-priority',
     label: 'High Priority',
     icon: FireIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       priority: ['high']
     }
@@ -170,6 +181,8 @@ const builtInPresets = computed(() => [
     id: 'medium-priority',
     label: 'Medium Priority',
     icon: ExclamationTriangleIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       priority: ['medium']
     }
@@ -178,6 +191,8 @@ const builtInPresets = computed(() => [
     id: 'low-priority',
     label: 'Low Priority',
     icon: CheckIcon,
+    type: 'basic',
+    count: 0,
     filters: {
       priority: ['low']
     }
@@ -186,25 +201,19 @@ const builtInPresets = computed(() => [
     id: 'urgent-pending',
     label: 'Urgent Pending',
     icon: BoltIcon,
+    type: 'query',
+    count: 0,
     filters: {
       status: ['pending'],
       priority: ['high']
     }
   },
   {
-    id: 'recent-tasks',
-    label: 'Recent Tasks',
-    icon: CalendarIcon,
-    filters: {
-      created_from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Last 7 days
-      sort_by: 'created_at',
-      sort_direction: 'desc'
-    }
-  },
-  {
     id: 'oldest-pending',
     label: 'Oldest Pending',
     icon: ArchiveBoxIcon,
+    type: 'query',
+    count: 0,
     filters: {
       status: ['pending'],
       sort_by: 'created_at',
@@ -217,8 +226,14 @@ const filterPresets = computed(() => [...builtInPresets.value, ...customPresets.
 
 // Computed properties
 const hasActiveFilters = computed(() => {
-  // Check if any preset is currently active (meaning filters are applied)
-  return isAnyPresetActive.value
+  const currentFilters = taskStore.filters
+  
+  // Check if any filters are different from default state
+  return currentFilters.status !== 'all' || 
+         currentFilters.priority !== 'all' || 
+         currentFilters.search !== '' || 
+         currentFilters.sort_by !== 'order' || 
+         currentFilters.sort_direction !== 'asc'
 })
 
 const hasCustomFilters = computed(() => {
@@ -273,33 +288,63 @@ const toggleCollapsed = () => {
 }
 
 const applyPreset = (preset) => {
-  // Apply preset filters to the task store
-  if (preset.filters.status) {
-    taskStore.setFilter('status', preset.filters.status.length === 2 ? 'all' : preset.filters.status[0])
-  } else {
-    taskStore.setFilter('status', 'all')
-  }
-  
-  if (preset.filters.priority) {
-    taskStore.setFilter('priority', preset.filters.priority.length === 3 ? 'all' : preset.filters.priority.join(','))
-  } else {
-    taskStore.setFilter('priority', 'all')
-  }
-  
-  if (preset.filters.created_from) {
-    taskStore.setFilter('date_from', preset.filters.created_from)
-  }
-  
-  if (preset.filters.created_to) {
-    taskStore.setFilter('date_to', preset.filters.created_to)
-  }
-  
-  if (preset.filters.sort_by) {
-    taskStore.setFilter('sort_by', preset.filters.sort_by)
-  }
-  
-  if (preset.filters.sort_direction) {
-    taskStore.setFilter('sort_direction', preset.filters.sort_direction)
+  // For basic filters (status/priority), only allow one at a time
+  if (preset.type === 'basic') {
+    // Check if preset is currently active, if so toggle it off
+    if (isPresetActive(preset)) {
+      // Clear filters to "toggle off" the preset
+      clearAllFilters()
+      return
+    }
+    
+    // For basic filters, clear existing and apply only this one
+    taskStore.clearFilters()
+    
+    // Apply this preset's filters
+    if (preset.filters.status) {
+      taskStore.setFilter('status', preset.filters.status.length === 2 ? 'all' : preset.filters.status[0])
+    }
+    
+    if (preset.filters.priority) {
+      taskStore.setFilter('priority', preset.filters.priority.length === 3 ? 'all' : preset.filters.priority[0])
+    }
+  } 
+  // For query filters (compound filters), apply directly and override everything
+  else if (preset.type === 'query') {
+    // Check if preset is currently active, if so toggle it off
+    if (isPresetActive(preset)) {
+      // Clear all filters to "toggle off" the query
+      clearAllFilters()
+      return
+    }
+    
+    // Clear existing filters first
+    taskStore.clearFilters()
+    
+    // Apply all filters from this query preset
+    if (preset.filters.status) {
+      taskStore.setFilter('status', preset.filters.status.length === 2 ? 'all' : preset.filters.status[0])
+    }
+    
+    if (preset.filters.priority) {
+      taskStore.setFilter('priority', preset.filters.priority.length === 3 ? 'all' : preset.filters.priority[0])
+    }
+    
+    if (preset.filters.created_from) {
+      taskStore.setFilter('date_from', preset.filters.created_from)
+    }
+    
+    if (preset.filters.created_to) {
+      taskStore.setFilter('date_to', preset.filters.created_to)
+    }
+    
+    if (preset.filters.sort_by) {
+      taskStore.setFilter('sort_by', preset.filters.sort_by)
+    }
+    
+    if (preset.filters.sort_direction) {
+      taskStore.setFilter('sort_direction', preset.filters.sort_direction)
+    }
   }
   
   // Save current filter state
@@ -307,31 +352,129 @@ const applyPreset = (preset) => {
 }
 
 const isPresetActive = (preset) => {
-  // Check if current task store filters match the preset
   const currentFilters = taskStore.filters
   
-  // Check status filter
-  if (preset.filters.status) {
-    const expectedStatus = preset.filters.status.length === 2 ? 'all' : preset.filters.status[0]
-    if (currentFilters.status !== expectedStatus) return false
+  // If filters are in default state, only "All Tasks" preset should be active
+  const isDefaultState = currentFilters.status === 'all' && 
+                         currentFilters.priority === 'all' && 
+                         currentFilters.search === '' && 
+                         currentFilters.sort_by === 'order' && 
+                         currentFilters.sort_direction === 'asc'
+  
+  if (isDefaultState) {
+    return preset.id === 'all-tasks'
   }
   
-  // Check priority filter  
-  if (preset.filters.priority) {
-    const expectedPriority = preset.filters.priority.length === 3 ? 'all' : preset.filters.priority.join(',')
-    if (currentFilters.priority !== expectedPriority) return false
+  // For basic filters, check exact match AND ensure no other conditions are set
+  if (preset.type === 'basic') {
+    // Check if this is a status-only basic filter
+    if (preset.filters.status && !preset.filters.priority) {
+      // Must match status exactly, priority must be 'all', and no special sorting/dates
+      return currentFilters.status === preset.filters.status[0] &&
+             currentFilters.priority === 'all' &&
+             currentFilters.sort_by === 'order' &&
+             currentFilters.sort_direction === 'asc' &&
+             !currentFilters.date_from &&
+             !currentFilters.date_to
+    }
+    
+    // Check if this is a priority-only basic filter
+    if (preset.filters.priority && !preset.filters.status) {
+      // Must match priority exactly, status must be 'all', and no special sorting/dates
+      return currentFilters.priority === preset.filters.priority[0] &&
+             currentFilters.status === 'all' &&
+             currentFilters.sort_by === 'order' &&
+             currentFilters.sort_direction === 'asc' &&
+             !currentFilters.date_from &&
+             !currentFilters.date_to
+    }
+    
+    // Check if this is the "All Tasks" filter
+    if (preset.filters.status && preset.filters.priority) {
+      return currentFilters.status === 'all' &&
+             currentFilters.priority === 'all' &&
+             currentFilters.sort_by === 'order' &&
+             currentFilters.sort_direction === 'asc' &&
+             !currentFilters.date_from &&
+             !currentFilters.date_to
+    }
+    
+    return false
   }
   
-  // Check sort options
-  if (preset.filters.sort_by && currentFilters.sort_by !== preset.filters.sort_by) return false
-  if (preset.filters.sort_direction && currentFilters.sort_direction !== preset.filters.sort_direction) return false
+  // For query filters, check if ALL filter conditions match exactly
+  if (preset.type === 'query') {
+    let matches = true
+    
+    // Check status filter
+    if (preset.filters.status) {
+      if (preset.filters.status.length === 1) {
+        if (currentFilters.status !== preset.filters.status[0]) matches = false
+      } else if (preset.filters.status.length === 2) {
+        if (currentFilters.status !== 'all') matches = false
+      }
+    } else {
+      // If preset doesn't specify status, current status should be 'all'
+      if (currentFilters.status !== 'all') matches = false
+    }
+    
+    // Check priority filter  
+    if (preset.filters.priority) {
+      if (preset.filters.priority.length === 1) {
+        if (currentFilters.priority !== preset.filters.priority[0]) matches = false
+      } else if (preset.filters.priority.length === 3) {
+        if (currentFilters.priority !== 'all') matches = false
+      }
+    } else {
+      // If preset doesn't specify priority, current priority should be 'all'
+      if (currentFilters.priority !== 'all') matches = false
+    }
+    
+    // Check sort options
+    if (preset.filters.sort_by) {
+      if (currentFilters.sort_by !== preset.filters.sort_by) matches = false
+    } else {
+      // If preset doesn't specify sort, should be default
+      if (currentFilters.sort_by !== 'order') matches = false
+    }
+    
+    if (preset.filters.sort_direction) {
+      if (currentFilters.sort_direction !== preset.filters.sort_direction) matches = false
+    } else {
+      // If preset doesn't specify sort direction, should be default
+      if (currentFilters.sort_direction !== 'asc') matches = false
+    }
+    
+    // Check date filters
+    if (preset.filters.created_from) {
+      if (currentFilters.date_from !== preset.filters.created_from) matches = false
+    } else {
+      // If preset doesn't specify date_from, current should be empty
+      if (currentFilters.date_from) matches = false
+    }
+    
+    if (preset.filters.created_to) {
+      if (currentFilters.date_to !== preset.filters.created_to) matches = false
+    } else {
+      // If preset doesn't specify date_to, current should be empty
+      if (currentFilters.date_to) matches = false
+    }
+    
+    return matches
+  }
   
-  return true
+  return false
 }
 
 const clearAllFilters = () => {
   taskStore.clearFilters()
+  
+  // Force reactivity update by clearing all custom presets if needed
+  // and ensuring the component re-evaluates all computed properties
   saveFiltersToStorage()
+  
+  // Ensure the component updates immediately
+  updateFilterCounts()
 }
 
 const removeFilter = (filterKey) => {
@@ -401,8 +544,13 @@ const loadFiltersFromStorage = () => {
 
 const updateFilterCounts = () => {
   // Update counts based on current tasks and statistics from the store
-  const tasks = taskStore.tasks
-  const stats = taskStore.statistics
+  const tasks = taskStore.tasks || []
+  const stats = taskStore.statistics || {}
+  
+  // Don't update if no tasks are loaded yet
+  if (!Array.isArray(tasks)) {
+    return
+  }
   
   // Update status counts from store statistics
   statusOptions.value.forEach(option => {
@@ -448,10 +596,6 @@ const updateFilterCounts = () => {
       case 'urgent-pending':
         preset.count = tasks.filter(task => task.status === 'pending' && task.priority === 'high').length
         break
-      case 'recent-tasks':
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        preset.count = tasks.filter(task => new Date(task.created_at) >= sevenDaysAgo).length
-        break
       case 'oldest-pending':
         preset.count = tasks.filter(task => task.status === 'pending').length
         break
@@ -460,18 +604,29 @@ const updateFilterCounts = () => {
 }
 
 // Watch for changes in tasks and statistics to update counts
-watch(() => taskStore.tasks, updateFilterCounts, { deep: true })
-watch(() => taskStore.statistics, updateFilterCounts, { deep: true })
+watch(() => taskStore.tasks, (newTasks, oldTasks) => {
+  // Update counts whenever tasks change, including initial load
+  updateFilterCounts()
+}, { deep: true, immediate: true })
+
+watch(() => taskStore.statistics, (newStats, oldStats) => {
+  // Update counts when statistics change
+  updateFilterCounts()
+}, { deep: true, immediate: true })
+
+watch(() => taskStore.filters, () => {
+  // Force reactivity when filters change
+  updateFilterCounts()
+}, { deep: true })
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   loadFiltersFromStorage()
   
-  // Ensure statistics are loaded
-  if (taskStore.statistics.total === 0) {
-    taskStore.fetchStatistics()
-  }
-  
+  // Update filter counts with whatever data is already available
   updateFilterCounts()
+  
+  // If no tasks are loaded yet, the watchers will handle updating counts
+  // when tasks become available from the parent component's taskStore.init()
 })
 </script>

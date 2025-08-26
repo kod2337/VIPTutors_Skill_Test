@@ -1,60 +1,22 @@
 <template>
   <div class="space-y-6">
     <!-- Task Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 gap-4">
+      <!-- Progress Bar Card -->
       <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Total Tasks</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ statistics.total }}</p>
-          </div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-medium text-gray-600">Task Progress</h3>
+          <span class="text-lg font-semibold text-gray-900">{{ statistics.completion_rate }}%</span>
         </div>
-      </div>
-
-      <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Pending</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ statistics.pending }}</p>
-          </div>
+        <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+          <div 
+            class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
+            :style="{ width: `${statistics.completion_rate}%` }"
+          ></div>
         </div>
-      </div>
-
-      <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Completed</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ statistics.completed }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-            </svg>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-600">Progress</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ statistics.completion_rate }}%</p>
-          </div>
+        <div class="flex justify-between text-xs text-gray-500">
+          <span>{{ statistics.completed }} completed</span>
+          <span>{{ statistics.total }} total</span>
         </div>
       </div>
     </div>
