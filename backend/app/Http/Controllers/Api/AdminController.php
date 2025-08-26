@@ -13,7 +13,36 @@ use Carbon\Carbon;
 class AdminController extends Controller
 {
     /**
-     * Get admin dashboard statistics
+     * @OA\Get(
+     *     path="/admin/dashboard-stats",
+     *     tags={"Admin"},
+     *     summary="Get admin dashboard statistics",
+     *     description="Retrieve comprehensive statistics for the admin dashboard",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Dashboard statistics retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="total_users", type="integer", example=150),
+     *             @OA\Property(property="admin_users", type="integer", example=5),
+     *             @OA\Property(property="regular_users", type="integer", example=145),
+     *             @OA\Property(property="total_tasks", type="integer", example=1250),
+     *             @OA\Property(property="completed_tasks", type="integer", example=800),
+     *             @OA\Property(property="pending_tasks", type="integer", example=450),
+     *             @OA\Property(property="high_priority_tasks", type="integer", example=75),
+     *             @OA\Property(property="tasks_created_today", type="integer", example=25),
+     *             @OA\Property(property="tasks_created_this_week", type="integer", example=150)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden - Admin access required"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
+     *     )
+     * )
      */
     public function getDashboardStats(): JsonResponse
     {

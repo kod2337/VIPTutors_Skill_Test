@@ -103,6 +103,17 @@ class TaskService
      */
     public function reorderTasks(User $user, array $taskOrders): bool
     {
+        // Validate that all tasks belong to the user
+        $taskIds = array_column($taskOrders, 'id');
+        $userTaskIds = Task::where('user_id', $user->id)
+                          ->whereIn('id', $taskIds)
+                          ->pluck('id')
+                          ->toArray();
+        
+        if (count($taskIds) !== count($userTaskIds)) {
+            throw new \InvalidArgumentException('One or more tasks do not belong to the user');
+        }
+        
         $result = $this->taskRepository->reorderTasks($user->id, $taskOrders);
         
         if ($result) {

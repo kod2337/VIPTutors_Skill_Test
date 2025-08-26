@@ -175,9 +175,9 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
                             ->first();
 
         return [
-            'total' => $stats->total ?? 0,
-            'completed' => $stats->completed ?? 0,
-            'pending' => $stats->pending ?? 0,
+            'total_tasks' => $stats->total ?? 0,
+            'completed_tasks' => $stats->completed ?? 0,
+            'pending_tasks' => $stats->pending ?? 0,
             'high_priority' => $stats->high_priority ?? 0,
             'medium_priority' => $stats->medium_priority ?? 0,
             'low_priority' => $stats->low_priority ?? 0,

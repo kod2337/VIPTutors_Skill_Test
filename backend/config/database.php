@@ -67,7 +67,7 @@ return [
             'url' => env('DB_TEST_URL'),
             'host' => env('DB_TEST_HOST', '127.0.0.1'),
             'port' => env('DB_TEST_PORT', '3306'),
-            'database' => env('DB_TEST_DATABASE', 'task_management_test'),
+            'database' => env('DB_TEST_DATABASE', 'task_management_testgrounds'),
             'username' => env('DB_TEST_USERNAME', 'root'),
             'password' => env('DB_TEST_PASSWORD', ''),
             'unix_socket' => env('DB_TEST_SOCKET', ''),
