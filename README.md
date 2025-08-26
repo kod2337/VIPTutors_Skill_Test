@@ -424,7 +424,7 @@ For issues and support, please refer to the project documentation or create an i
 
 MIT License
 
-Copyright (c) 2025 Kayser's Task Management System Skill Test
+Copyright (c) 2025 Kayser Bompat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
